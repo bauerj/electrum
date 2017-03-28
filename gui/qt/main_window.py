@@ -37,6 +37,7 @@ import PyQt5
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import PyQt5.QtCore as QtCore
+from gui.qt.exception_window import Exception_Window
 
 from electrum.util import bh2u, bfh
 from . import icons_rc
@@ -105,6 +106,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def __init__(self, gui_object, wallet):
         QMainWindow.__init__(self)
+
+        self.setup_exception_hook()
 
         self.gui_object = gui_object
         self.config = config = gui_object.config
@@ -206,6 +209,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def on_history(self, b):
         self.new_fx_history_signal.emit()
+
+    def setup_exception_hook(self):
+        def handler(*args):
+            self.exception_window = Exception_Window(*args)
+        sys.excepthook = handler
 
     def on_fx_history(self):
         self.history_list.refresh_headers()
