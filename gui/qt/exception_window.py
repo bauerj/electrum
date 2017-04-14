@@ -26,6 +26,7 @@ import traceback
 import urllib
 import webbrowser
 
+from PyQt4.QtCore import QObject
 from PyQt4.QtGui import *
 import PyQt4.QtCore as QtCore
 
@@ -35,6 +36,7 @@ from lib import ELECTRUM_VERSION
 
 
 class Exception_Window(QWidget):
+    _active_window = None
     def __init__(self, exctype, value, tb):
         self.exc_args = (exctype, value, tb)
         QWidget.__init__(self)
@@ -81,3 +83,17 @@ class Exception_Window(QWidget):
     def closeEvent(self, event):
         self.on_close()
         event.accept()
+
+def _show_window(exctype, value, tb):
+    Exception_Window._active_window = Exception_Window(exctype, value, tb)
+
+class Exception_Hook(QObject):
+    _report_exception = QtCore.pyqtSignal(object, object, object)
+
+    def __init__(self, *args, **kwargs):
+        super(Exception_Hook, self).__init__(*args, **kwargs)
+        sys.excepthook = self.handler
+        self._report_exception.connect(_show_window)
+
+    def handler(self, *args):
+        self._report_exception.emit(*args)
