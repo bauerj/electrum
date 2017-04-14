@@ -21,7 +21,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import threading
+import platform
 import traceback
 import urllib
 import webbrowser
@@ -34,11 +34,24 @@ from electrum.i18n import _
 import sys
 from lib import ELECTRUM_VERSION
 
+issue_template = """Traceback
+=========
+```
+{traceback}
+```
+Additional information
+======================
+- Electrum version: {electrum_version}
+- Operating system: {os}
+- Wallet type: {wallet_type}
+"""
+
 
 class Exception_Window(QWidget):
     _active_window = None
-    def __init__(self, exctype, value, tb):
+    def __init__(self, main_window, exctype, value, tb):
         self.exc_args = (exctype, value, tb)
+        self.main_window = main_window
         QWidget.__init__(self)
         self.setWindowTitle('Electrum - ' + _('An Error Occured'))
         self.setMinimumSize(600, 300)
@@ -52,11 +65,9 @@ class Exception_Window(QWidget):
         main_box.addWidget(QLabel(
             _('To help us diagnose and fix the problem, you can send us a bug report with the following information:')))
 
-        self.info_string = "# From Electrum " + ELECTRUM_VERSION + ":\n"
-        self.info_string += "".join(traceback.format_exception(exctype, value, tb))
         info_textfield = QTextEdit()
         info_textfield.setReadOnly(True)
-        info_textfield.setText(self.info_string)
+        info_textfield.setText(self.get_report_string())
         main_box.addWidget(info_textfield)
 
         report_button = QPushButton(_('Send Bug Report'))
@@ -73,7 +84,7 @@ class Exception_Window(QWidget):
 
     def send_report(self):
         url = 'https://github.com/spesmilo/electrum/issues/new?body={}'.format(
-            urllib.quote_plus("```\n" + self.info_string + "\n```"))
+            urllib.quote_plus(self.get_report_string()))
         webbrowser.open(url, new=2)
 
     def on_close(self):
@@ -84,16 +95,32 @@ class Exception_Window(QWidget):
         self.on_close()
         event.accept()
 
-def _show_window(exctype, value, tb):
-    Exception_Window._active_window = Exception_Window(exctype, value, tb)
+    def get_report_string(self):
+        args = {
+            "traceback": "".join(traceback.format_exception(*self.exc_args)),
+            "electrum_version": ELECTRUM_VERSION,
+            "os": platform.platform(),
+            "wallet_type": "unknown"
+        }
+        try:
+            args["wallet_type"] = self.main_window.wallet.wallet_type
+        except:
+            # Maybe the wallet isn't loaded yet
+            pass
+        return issue_template.format(**args)
+
+
+def _show_window(*args):
+    Exception_Window._active_window = Exception_Window(*args)
 
 class Exception_Hook(QObject):
-    _report_exception = QtCore.pyqtSignal(object, object, object)
+    _report_exception = QtCore.pyqtSignal(object, object, object, object)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, main_window, *args, **kwargs):
         super(Exception_Hook, self).__init__(*args, **kwargs)
+        self.main_window = main_window
         sys.excepthook = self.handler
         self._report_exception.connect(_show_window)
 
     def handler(self, *args):
-        self._report_exception.emit(*args)
+        self._report_exception.emit(self.main_window, *args)
