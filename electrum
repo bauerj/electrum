@@ -93,7 +93,7 @@ if is_local or is_android:
     imp.load_module('electrum_plugins', *imp.find_module('plugins'))
 
 
-from electrum import bitcoin, network
+from electrum import bitcoin, network, util
 from electrum import SimpleConfig, Network
 from electrum.wallet import Wallet, Imported_Wallet
 from electrum.storage import WalletStorage
@@ -303,6 +303,7 @@ def init_plugins(config, gui_name):
 
 if __name__ == '__main__':
 
+    util.setup_thread_excepthook()
     # on osx, delete Process Serial Number arg generated for apps launched in Finder
     sys.argv = list(filter(lambda x: not x.startswith('-psn'), sys.argv))
 
