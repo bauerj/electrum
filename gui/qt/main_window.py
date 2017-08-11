@@ -397,7 +397,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 self.show_critical(_("Electrum was unable to copy your wallet file to the specified location.") + "\n" + str(reason), title=_("Unable to create backup"))
 
     def update_recently_visited(self, filename):
-        filename = filename.decode('utf8')
+        encoding = "latin1" if os.name == 'nt' else "utf8"
+        filename = filename.decode(encoding)
         recent = self.config.get('recently_open', [])
         try:
             sorted(recent)
@@ -412,7 +413,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         for i, k in enumerate(sorted(recent)):
             b = os.path.basename(k)
             def loader(k):
-                return lambda: self.gui_object.new_window(k.encode('utf8'))
+                return lambda: self.gui_object.new_window(k.encode(encoding))
             self.recently_visited_menu.addAction(b, loader(k)).setShortcut(QKeySequence("Ctrl+%d"%(i+1)))
         self.recently_visited_menu.setEnabled(len(recent))
 
