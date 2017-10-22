@@ -26,9 +26,10 @@ import traceback
 import urllib
 import webbrowser
 
-from PyQt4.QtCore import QObject
-from PyQt4.QtGui import *
-import PyQt4.QtCore as QtCore
+from PyQt5.QtCore import QObject
+import PyQt5.QtCore as QtCore
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import *
 
 from electrum.i18n import _
 import sys
@@ -49,6 +50,7 @@ Additional information
 
 class Exception_Window(QWidget):
     _active_window = None
+
     def __init__(self, main_window, exctype, value, tb):
         self.exc_args = (exctype, value, tb)
         self.main_window = main_window
@@ -84,7 +86,7 @@ class Exception_Window(QWidget):
 
     def send_report(self):
         url = 'https://github.com/spesmilo/electrum/issues/new?body={}'.format(
-            urllib.quote_plus(self.get_report_string()))
+            urllib.parse.quote(self.get_report_string()))
         webbrowser.open(url, new=2)
 
     def on_close(self):
