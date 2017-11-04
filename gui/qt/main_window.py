@@ -37,7 +37,7 @@ import PyQt5
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import PyQt5.QtCore as QtCore
-from gui.qt.exception_window import Exception_Hook
+from .exception_window import Exception_Hook
 
 from electrum.util import bh2u, bfh
 from . import icons_rc

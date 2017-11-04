@@ -34,7 +34,7 @@ from PyQt5.QtWidgets import *
 
 from electrum.i18n import _
 import sys
-from lib import ELECTRUM_VERSION
+from electrum import ELECTRUM_VERSION
 
 issue_template = """<h2>Traceback</h2>
 <pre>
