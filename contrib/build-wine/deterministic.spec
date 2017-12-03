@@ -22,10 +22,10 @@ hiddenimports += collect_submodules('keepkeylib')
 datas = [
     (home+'lib/currencies.json', 'electrum'),
     (home+'lib/servers.json', 'electrum'),
+    (home+'lib/servers_testnet.json', 'electrum'),
     (home+'lib/wordlist/english.txt', 'electrum/wordlist'),
     (home+'lib/locale', 'electrum/locale'),
     (home+'plugins', 'electrum_plugins'),
-    #(home+'packages/requests/cacert.pem', 'requests/cacert.pem')
 ]
 datas += collect_data_files('trezorlib')
 datas += collect_data_files('btchip')
@@ -65,25 +65,58 @@ for d in a.datas:
 a.binaries = [x for x in a.binaries if not x[1].lower().startswith(r'c:\windows')]
 
 pyz = PYZ(a.pure)
-exe = EXE(pyz,
-          a.scripts,
-          a.binaries,
-          a.datas,
-          name=os.path.join('build\\pyi.win32\\electrum', cmdline_name),
-          debug=False,
-          strip=None,
-          upx=False,
-          icon=home+'icons/electrum.ico',
-          console=False)
-          # The console True makes an annoying black box pop up, but it does make Electrum output command line commands, with this turned off no output will be given but commands can still be used
 
-coll = COLLECT(exe,
-               a.binaries,
-               a.zipfiles,
-               a.datas,
-               strip=None,
-               upx=True,
-               debug=False,
-               icon=home+'icons/electrum.ico',
-               console=False,
-               name=os.path.join('dist', 'electrum'))
+
+#####
+# "standalone" exe with all dependencies packed into it
+
+exe_standalone = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.datas, 
+    name=os.path.join('build\\pyi.win32\\electrum', cmdline_name + ".exe"),
+    debug=False,
+    strip=None,
+    upx=False,
+    icon=home+'icons/electrum.ico',
+    console=False)
+    # console=True makes an annoying black box pop up, but it does make Electrum output command line commands, with this turned off no output will be given but commands can still be used
+
+exe_portable = EXE(
+    pyz,
+    a.scripts,
+    a.binaries,
+    a.datas + [ ('is_portable', 'README.md', 'DATA' ) ],
+    name=os.path.join('build\\pyi.win32\\electrum', cmdline_name + "-portable.exe"),
+    debug=False,
+    strip=None,
+    upx=False,
+    icon=home+'icons/electrum.ico',
+    console=False)
+
+#####
+# exe and separate files that NSIS uses to build installer "setup" exe
+
+exe_dependent = EXE(
+    pyz,
+    a.scripts,
+    exclude_binaries=True,
+    name=os.path.join('build\\pyi.win32\\electrum', cmdline_name),
+    debug=False,
+    strip=None,
+    upx=False,
+    icon=home+'icons/electrum.ico',
+    console=False)
+
+coll = COLLECT(
+    exe_dependent,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
+    strip=None,
+    upx=True,
+    debug=False,
+    icon=home+'icons/electrum.ico',
+    console=False,
+    name=os.path.join('dist', 'electrum'))

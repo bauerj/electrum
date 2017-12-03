@@ -22,15 +22,9 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
 
-import os
 import sys
 import datetime
-import time
 import copy
 import argparse
 import json
@@ -40,13 +34,12 @@ from functools import wraps
 from decimal import Decimal
 
 from .import util
-from .util import print_msg, format_satoshis, print_stderr
+from .util import bfh, bh2u, format_satoshis
 from .import bitcoin
 from .bitcoin import is_address,  hash_160, COIN, TYPE_ADDRESS
+from .i18n import _
 from .transaction import Transaction
-from .import paymentrequest
 from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
-from .import contacts
 from .plugins import run_hook
 
 known_commands = {}
@@ -280,6 +273,8 @@ class Commands:
     @command('wp')
     def getprivatekeys(self, address, password=None):
         """Get private keys of addresses. You may pass a single wallet address, or a list of wallet addresses."""
+        if isinstance(address, str):
+            address = address.strip()
         if is_address(address):
             return self.wallet.export_private_key(address, password)[0]
         domain = address
@@ -388,16 +383,17 @@ class Commands:
             raise BaseException('cannot verify alias', x)
         return out['address']
 
-    @command('nw')
+    @command('n')
     def sweep(self, privkey, destination, fee=None, nocheck=False, imax=100):
         """Sweep private keys. Returns a transaction that spends UTXOs from
         privkey to a destination address. The transaction is not
         broadcasted."""
+        from .wallet import sweep
         tx_fee = satoshis(fee)
         privkeys = privkey.split()
         self.nocheck = nocheck
-        dest = self._resolver(destination)
-        tx = self.wallet.sweep(privkeys, self.network, self.config, dest, tx_fee, imax)
+        #dest = self._resolver(destination)
+        tx = sweep(privkeys, self.network, self.config, destination, tx_fee, imax)
         return tx.as_dict() if tx else None
 
     @command('wp')
@@ -651,19 +647,19 @@ class Commands:
     @command('w')
     def clearrequests(self):
         """Remove all payment requests"""
-        for k in self.wallet.receive_requests.keys():
+        for k in list(self.wallet.receive_requests.keys()):
             self.wallet.remove_payment_request(k, self.config)
 
     @command('n')
     def notify(self, address, URL):
         """Watch an address. Everytime the address changes, a http POST is sent to the URL."""
         def callback(x):
-            import urllib2
+            import urllib.request
             headers = {'content-type':'application/json'}
             data = {'address':address, 'status':x.get('result')}
             try:
-                req = urllib2.Request(URL, json.dumps(data), headers)
-                response_stream = urllib2.urlopen(req, timeout=5)
+                req = urllib.request.Request(URL, json.dumps(data), headers)
+                response_stream = urllib.request.urlopen(req, timeout=5)
                 util.print_error('Got Response for %s' % address)
             except BaseException as e:
                 util.print_error(str(e))
@@ -712,7 +708,7 @@ command_options = {
     'nocheck':     (None, "Do not verify aliases"),
     'imax':        (None, "Maximum number of inputs"),
     'fee':         ("-f", "Transaction fee (in BTC)"),
-    'from_addr':   ("-F", "Source address. If it isn't in the wallet, it will ask for the private key unless supplied in the format public_key:private_key. It's not saved in the wallet."),
+    'from_addr':   ("-F", "Source address (must be a wallet address; use sweep to spend from non-wallet address)."),
     'change_addr': ("-c", "Change address. Default is a spare address, or the source address if it's not in the wallet"),
     'nbits':       (None, "Number of bits of entropy"),
     'entropy':     (None, "Custom entropy"),
