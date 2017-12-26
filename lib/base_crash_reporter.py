@@ -21,7 +21,6 @@
 # SOFTWARE.
 import json
 import locale
-import platform
 import traceback
 import requests
 

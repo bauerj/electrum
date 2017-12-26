@@ -34,7 +34,7 @@ from kivy.lang import Builder
 #Factory.register('InfoBubble', module='electrum_gui.kivy.uix.dialogs')
 #Factory.register('OutputList', module='electrum_gui.kivy.uix.dialogs')
 #Factory.register('OutputItem', module='electrum_gui.kivy.uix.dialogs')
-
+from gui.kivy.uix.dialogs.crash_reporter import ExceptionHook
 from .uix.dialogs.installwizard import InstallWizard
 from .uix.dialogs import InfoBubble
 from .uix.dialogs import OutputList, OutputItem
@@ -461,6 +461,7 @@ class ElectrumWindow(App):
         #win.softinput_mode = 'below_target'
         self.on_size(win, win.size)
         self.init_ui()
+        ExceptionHook(self)
         self.load_wallet_by_name(self.electrum_config.get_wallet_path())
         # init plugins
         run_hook('init_kivy', self)
