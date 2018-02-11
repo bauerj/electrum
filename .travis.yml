@@ -26,3 +26,10 @@ jobs:
         - sudo apt-get install -qq winehq-stable dirmngr gnupg2
       script: ./contrib/build-wine/build.sh
       after_success: true
+    - stage: macos build
+      os: osx
+      language: c
+      python: false
+      install: true
+      script: ./contrib/build-osx/make_osx
+      after_success: true
