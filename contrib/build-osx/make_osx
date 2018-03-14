@@ -77,6 +77,8 @@ fail "Could not install hardware wallet requirements"
 info "Building $PACKAGE..."
 python3 setup.py install --user > /dev/null || fail "Could not build $PACKAGE"
 
+pip uninstall -y pyCryptodomex
+
 info "Faking timestamps..."
 for d in ~/Library/Python/ ~/.pyenv .; do
   pushd $d
