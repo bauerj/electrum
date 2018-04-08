@@ -6,25 +6,26 @@ BUILDDIR=/tmp/electrum-build
 PACKAGE=Electrum
 GIT_REPO=https://github.com/spesmilo/electrum
 
+export PATH="~/Library/Python/3.6/bin:$PATH"
 . $(dirname "$0")/base.sh
 
 src_dir=$(dirname "$0")
 cd $src_dir/../..
+rm -rf ./dist
+
+rm  -rf $BUILDDIR > /dev/null 2>&1
+mkdir $BUILDDIR
 
 export PYTHONHASHSEED=22
 VERSION=`git describe --tags`
 
-info "Installing Python $PYTHON_VERSION"
-export PATH="~/.pyenv/bin:~/.pyenv/shims:~/Library/Python/3.6/bin:$PATH"
-if [ -d "~/.pyenv" ]; then
-  pyenv update
+if [[ $(python3 -V 2>&1) == "Python $PYTHON_VERSION" ]] > /dev/null 2>&1; then
+  info "Python $PYTHON_VERSION is already installed"
 else
-  curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash > /dev/null 2>&1
+  curl -o $BUILDDIR/python-$PYTHON_VERSION.pkg https://www.python.org/ftp/python/$PYTHON_VERSION/python-$PYTHON_VERSION-macosx10.6.pkg
+  info "Installing Python $PYTHON_VERSION"
+  sudo installer -pkg $BUILDDIR/python-$PYTHON_VERSION.pkg -target /
 fi
-PYTHON_CONFIGURE_OPTS="--enable-framework" pyenv install -s $PYTHON_VERSION && \
-pyenv global $PYTHON_VERSION || \
-fail "Unable to use Python $PYTHON_VERSION"
-
 
 info "Installing pyinstaller"
 python3 -m pip install git+https://github.com/ecdsa/pyinstaller@fix_2952 -I --user || fail "Could not install pyinstaller"
@@ -35,11 +36,6 @@ python3 --version
 echo -n "Pyinstaller "
 pyinstaller --version
 
-rm -rf ./dist
-
-
-rm  -rf $BUILDDIR > /dev/null 2>&1
-mkdir $BUILDDIR
 
 info "Downloading icons and locale..."
 for repo in icons locale; do
@@ -63,6 +59,14 @@ fail "Could not install requirements"
 info "Installing hardware wallet requirements..."
 python3 -m pip install -Ir ./contrib/deterministic-build/requirements-hw.txt --user || \
 fail "Could not install hardware wallet requirements"
+
+info "Installing prebuilt wheels for"
+python3 -m pip uninstall -y pyblake2 hidapi
+pushd $BUILDDIR
+curl -O http://bauerj.eu/hidapi-0.7.99.post21-cp36-cp36m-macosx_10_6_intel.whl
+curl -O http://bauerj.eu/pyblake2-1.1.1-cp36-cp36m-macosx_10_6_intel.whl
+python3 -m pip install *.whl
+popd
 
 info "Building $PACKAGE..."
 python3 setup.py install --user > /dev/null || fail "Could not build $PACKAGE"
